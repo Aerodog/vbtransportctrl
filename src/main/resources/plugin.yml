@@ -1,0 +1,4 @@
+name: vbtransportctrl
+version: MAVEN_VERSION
+main: com.patrickanker.vbtransportctrl.TransportPlugin
+author: Patrick Anker
