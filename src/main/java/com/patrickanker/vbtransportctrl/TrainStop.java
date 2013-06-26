@@ -25,6 +25,8 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
+import org.bukkit.entity.Minecart;
+import org.bukkit.util.Vector;
 
 public class TrainStop {
     
@@ -32,6 +34,8 @@ public class TrainStop {
     private final int timeout;
     private final String direction;
     private final boolean spawnMinecartOnSignPower;
+    
+    private Minecart waitingCart;
     
     public TrainStop(Location loc)
     {
@@ -74,14 +78,47 @@ public class TrainStop {
         return timeout;
     }
     
-    public String getDirection()
-    {
-        return direction;
-    }
-    
     public boolean spawnMinecartOnSignPower()
     {
         return spawnMinecartOnSignPower;
+    }
+    
+    public boolean hasWaitingCart()
+    {
+        return waitingCart != null;
+    }
+    
+    public Minecart getWaitingCart()
+    {
+        return waitingCart;
+    }
+    
+    public void setWaitingCart(Minecart cart)
+    {
+        if (cart == null && hasWaitingCart())
+            waitingCart = cart;
+        
+        if (!hasWaitingCart())
+            waitingCart = cart;
+    }
+    
+    public void deploy()
+    {
+        if (hasWaitingCart()) {
+            if (direction.equals("north")) {
+                waitingCart.setVelocity(new Vector(0, -waitingCart.getMaxSpeed(), 0));
+                setWaitingCart(null);
+            } else if (direction.equals("east")) {
+                waitingCart.setVelocity(new Vector(waitingCart.getMaxSpeed(), 0, 0));
+                setWaitingCart(null);
+            } else if (direction.equals("south")) {
+                waitingCart.setVelocity(new Vector(0, waitingCart.getMaxSpeed(), 0));
+                setWaitingCart(null);
+            } else {
+                waitingCart.setVelocity(new Vector(-waitingCart.getMaxSpeed(), 0, 0));
+                setWaitingCart(null);
+            }
+        }
     }
     
     public static boolean isStop(Location loc)

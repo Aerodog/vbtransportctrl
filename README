@@ -1,0 +1,20 @@
+CAUTION: IN-DEV SOFTWARE // May not function
+=========================
+
+This is a little plugin I made for The Voxel Box to control their "MetroVox" network. Vanilla minecart systems only work so well, but I discovered that they are a bit of a pain space-wise. I like to make subway systems, but the redstone required to make a proper subway system takes up too much space to stack rail lines.
+
+The setup for the plugin is simple. All you need is a sign under a track with some key information (this is a stop):
+
+===============
+|  #railstop  |
+|  [timeout]  |
+| [direction] |
+|    [y/n]    |
+===============
+       |
+       |
+       |
+
+The timeout (integer) is the time in seconds a cart (with player onboard) will wait in a stop before continuing.
+The direction is the (obviously) the direction of travel of the stop.
+'Y' or 'N' (yes or no, respectively) determines if when the block under the control receives power a cart will be spawned on the track above the control sign.

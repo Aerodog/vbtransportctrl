@@ -17,10 +17,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.MessageDigest;
-import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.configuration.InvalidConfigurationException;
@@ -41,9 +38,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 public class TransportPlugin extends JavaPlugin implements Listener {
 
     private static TransportPlugin singleton;
-    
-    private List<TrainStop> registeredTrainStops = new LinkedList<TrainStop>();
-    private Map<TrainStop, Long> lastStopUpdateTime = new HashMap<TrainStop, Long>();
     
     private TrainStopTrackerThread trainStopTrackerThread = new TrainStopTrackerThread();
     private MinecartTrackerThread minecartTrackerThread = new MinecartTrackerThread();
@@ -145,6 +139,16 @@ public class TransportPlugin extends JavaPlugin implements Listener {
         }
     }
     
+    public static MinecartTrackerThread getMinecartManager()
+    {
+        return singleton.minecartTrackerThread;
+    }
+    
+    public static TrainStopTrackerThread getTrainStopManager()
+    {
+        return singleton.trainStopTrackerThread;
+    }
+    
     public static void DEBUG(String message)
     {
         if (singleton.configSpitDebugMessages)
@@ -175,9 +179,12 @@ public class TransportPlugin extends JavaPlugin implements Listener {
         if (!configFile.exists()) {
             configFile.getParentFile().mkdirs();
             configFile.createNewFile();
+            
+            config.set("debugmessages", singleton.configSpitDebugMessages);
+            config.save(configFile);
+            DEBUG("Saved config");
         } else {
             config.set("debugmessages", singleton.configSpitDebugMessages);
-
             config.save(configFile);
             DEBUG("Saved config");
         }

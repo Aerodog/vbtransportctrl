@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 import org.bukkit.Location;
 import org.bukkit.entity.Minecart;
-import org.bukkit.util.Vector;
 
 public class MinecartTrackerThread extends Thread {
     
@@ -28,8 +27,6 @@ public class MinecartTrackerThread extends Thread {
     
     private List<Minecart> activateQueue = new LinkedList<Minecart>();
     private List<Minecart> deactivateQueue = new LinkedList<Minecart>();
-    
-    private Map<TrainStop, Long> pendingStops = new HashMap<TrainStop, Long>();
     
     public MinecartTrackerThread()
     {
@@ -45,56 +42,43 @@ public class MinecartTrackerThread extends Thread {
     @Override
     public void run()
     {
+        TrainStopTrackerThread _stopManager = TransportPlugin.getTrainStopManager();
+        
         while (!terminate) {
             if (!deactivateQueue.isEmpty())
                 activeMinecarts.removeAll(deactivateQueue);
             
             for (Minecart cart : deactivateQueue) {
-                if (StopDetector.isStop(cart.getLocation()) != null) {
-                    TrainStop stop = StopDetector.isStop(cart.getLocation());
+                if (_stopManager.isTrainStopRegistered(cart.getLocation())) {
+                    TrainStop _stop = _stopManager.getTrainStopForLocation(cart.getLocation());
                     
-                    if (isPendingStop(stop))
-                        removePendingStop(stop);
+                    if (!_stopManager.isPendingStop(_stop)) {
+                        _stopManager.removePendingStop(_stop);
+                    } else {
+                        cart.remove();
+                    }
+                } else {
+                    cart.remove();
                 }
-                
-                cart.remove();
             }
+            
+            deactivateQueue.clear();
             
             if (!activateQueue.isEmpty()) {
                 activeMinecarts.addAll(activateQueue);
-                TransportPlugin.DEBUG("Loaded new carts into active carts");
             }
             
             activateQueue.clear();
-            deactivateQueue.clear();
-            
             
             for (Minecart cart : activeMinecarts) {
-                if (didMove(cart)) {
-                    TrainStop _stop = StopDetector.isStop(cart.getLocation());
-
-                    if (_stop != null) {
-                        TransportPlugin.DEBUG("Cart in stop");
-                        
-                        Location _previous = locations.get(cart);
-
-                        if (_stop.inStop(_previous) && !_stop.inStop(cart.getLocation())) {
-                            _stop.deactivateTracks();
-                        } else if (!_stop.inStop(_previous) && _stop.inStop(cart.getLocation())) {
-                            addPendingStop(_stop);
-                        }
-                    }
-                }
-            }
-            
-            for (Map.Entry<TrainStop, Long> entry : pendingStops.entrySet()) {
-                long _entry = entry.getValue();
-                
-                if ((System.currentTimeMillis() - _entry) > 15000) {
-                    entry.getKey().activateTracks();
+                if (didMove(cart) && _stopManager.isTrainStopRegistered(cart.getLocation())) {
+                    TrainStop _stop = _stopManager.getTrainStopForLocation(cart.getLocation());
+                    
                 }
             }
         }
+        
+        TransportPlugin.DEBUG("Neutralising thread resources: " + getName());
         
         activeMinecarts.clear();
         locations.clear();
@@ -121,21 +105,6 @@ public class MinecartTrackerThread extends Thread {
         deactivateQueue.add(cart);
     }
     
-    public boolean isPendingStop(TrainStop stop)
-    {
-        return pendingStops.containsKey(stop);
-    }
-    
-    public void addPendingStop(TrainStop stop)
-    {
-        pendingStops.put(stop, System.currentTimeMillis());
-    }
-    
-    public void removePendingStop(TrainStop stop)
-    {
-        pendingStops.remove(stop);
-    }
-    
     private boolean didMove(final Minecart cart)
     {
         synchronized (cart) {
@@ -146,14 +115,26 @@ public class MinecartTrackerThread extends Thread {
                 return false;
             }
 
-            Vector vel = cart.getVelocity();
-
-            if (vel.length() != 0) {
+            int x1 = previousLocation.getBlockX();
+            int y1 = previousLocation.getBlockY();
+            int z1 = previousLocation.getBlockZ();
+            
+            int x2 = cart.getLocation().getBlockX();
+            int y2 = cart.getLocation().getBlockY();
+            int z2 = cart.getLocation().getBlockZ();
+            
+            if (x1 != x2) {
                 locations.put(cart, cart.getLocation());
                 return true;
-            } else {
-                return false;
+            } else if (y1 != y2) {
+                locations.put(cart, cart.getLocation());
+                return true;
+            } else if (z1 != z2) {
+                locations.put(cart, cart.getLocation());
+                return true;
             }
+            
+            return false;
         }
     }
 }
