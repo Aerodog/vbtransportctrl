@@ -211,11 +211,9 @@ public class TransportPlugin extends JavaPlugin implements Listener {
         
         byte[] buffer = new byte[1024];
         MessageDigest md = MessageDigest.getInstance("MD5");
-        int numRead = 0;
+        int numRead;
         
-        while (numRead != -1) {
-            numRead = _inputStream.read(buffer);
-            
+        while ((numRead = _inputStream.read(buffer)) != -1) {
             if (numRead > 0) {
                 md.update(buffer, 0, numRead);
             }
