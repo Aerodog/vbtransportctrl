@@ -29,16 +29,20 @@ import java.io.InputStream;
 import java.security.MessageDigest;
 import java.util.List;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Minecart;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Vehicle;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockRedstoneEvent;
 import org.bukkit.event.vehicle.VehicleCreateEvent;
 import org.bukkit.event.vehicle.VehicleEnterEvent;
 import org.bukkit.event.vehicle.VehicleExitEvent;
@@ -154,6 +158,26 @@ public class TransportPlugin extends JavaPlugin implements Listener {
             Minecart cart = (Minecart) vehicle;
             minecartTrackerThread.deactivateCart(cart);
             DEBUG("Deactivated cart");
+        }
+    }
+    
+    @EventHandler(priority=EventPriority.LOW)
+    public void onBlockPower(BlockRedstoneEvent event)
+    {
+        Block b = event.getBlock();
+        Location loc = new Location(b.getWorld(), b.getX(), b.getY(), b.getZ() + 3);
+        
+        if (TrainStop.isStop(loc)) {
+            if (!trainStopTrackerThread.isTrainStopRegistered(loc)) {
+                TrainStop stop = new TrainStop(loc);
+                trainStopTrackerThread.registerTrainStop(stop);
+            }
+            
+            TrainStop stop = trainStopTrackerThread.getTrainStopForLocation(loc);
+            
+            if (!stop.hasWaitingCart() && stop.spawnMinecartOnSignPower()) {
+                b.getWorld().spawnEntity(loc, EntityType.MINECART);
+            }
         }
     }
     
