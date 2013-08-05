@@ -1,13 +1,23 @@
 /*
- * MinecartTrackerThread.java
- *
- * Project: vbtransportctrl
- *
- * Copyright (C) Patrick Anker 2013. All rights reserved.
+ * Copyright (c) 2013 Patrick Anker and contributors
  * 
- * vbtransportctrl by Patrick Anker is licensed under a Creative Commons 
- * Attribution-NonCommercial-NoDerivs 3.0 Unported License.
- *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 package com.patrickanker.vbtransportctrl;
@@ -18,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import org.bukkit.Location;
 import org.bukkit.entity.Minecart;
-import org.bukkit.util.Vector;
 
 public class MinecartTrackerThread extends Thread {
     
@@ -29,25 +38,9 @@ public class MinecartTrackerThread extends Thread {
     private List<Minecart> activateQueue = new LinkedList<Minecart>();
     private List<Minecart> deactivateQueue = new LinkedList<Minecart>();
     
-    private static final Vector NULL_VECTOR = new Vector(0, 0, 0);
-    
     public MinecartTrackerThread()
     {
         this.setName("Minecart Tracker Thread");
-    }
-    
-    class PointWrapper { // God I wish C structs existed in Java... creating an object for this is stupid
-        
-        public final int x;
-        public final int y;
-        public final int z;
-        
-        public PointWrapper(int _x, int _y, int _z)
-        {
-            this.x = _x;
-            this.y = _y;
-            this.z = _z;
-        }
     }
     
     /* ONLY CALL THIS ON STARTUP TO CATCH ACTIVE CARTS THROUGH A RELOAD */
@@ -59,18 +52,18 @@ public class MinecartTrackerThread extends Thread {
     @Override
     public void run()
     {
-        TrainStopTrackerThread _stopManager = TransportPlugin.getTrainStopManager();
+        TrainStopTrackerThread stopManager = TransportPlugin.getTrainStopManager();
         
         while (!terminate) {
             if (!deactivateQueue.isEmpty())
                 activeMinecarts.removeAll(deactivateQueue);
             
             for (Minecart cart : deactivateQueue) {
-                if (_stopManager.isTrainStopRegistered(cart.getLocation())) {
-                    TrainStop _stop = _stopManager.getTrainStopForLocation(cart.getLocation());
+                if (stopManager.isTrainStopRegistered(cart.getLocation())) {
+                    TrainStop _stop = stopManager.getTrainStopForLocation(cart.getLocation());
                     
-                    if (_stopManager.isPendingStop(_stop)) {
-                        _stopManager.removePendingStop(_stop);
+                    if (stopManager.isPendingStop(_stop)) {
+                        stopManager.removePendingStop(_stop);
                     } else {
                         cart.remove();
                     }
@@ -88,12 +81,19 @@ public class MinecartTrackerThread extends Thread {
             activateQueue.clear();
             
             for (Minecart cart : activeMinecarts) {
-                if (previousLocationWasStop(cart))
-                
-                if (didMove(cart) && _stopManager.isTrainStopRegistered(cart.getLocation())) {
-                    TrainStop _stop = _stopManager.getTrainStopForLocation(cart.getLocation());
+                if (didMove(cart)) {
+                    if (stopManager.isTrainStopRegistered(cart.getLocation())) {
+                        TrainStop stop = stopManager.getTrainStopForLocation(cart.getLocation());
+                        stop.halt(cart);
+                        stopManager.addPendingStop(stop);
+                    }
                     
-                    cart.setVelocity(NULL_VECTOR);
+                    if (TrainStop.isStop(cart.getLocation()) && !stopManager.isTrainStopRegistered(cart.getLocation())) {
+                        TrainStop stop = new TrainStop(cart.getLocation());
+                        stopManager.registerTrainStop(stop);
+                        stop.halt(cart);
+                        stopManager.addPendingStop(stop);
+                    }
                 }
             }
         }
@@ -152,27 +152,5 @@ public class MinecartTrackerThread extends Thread {
             
             return false;
         }
-    }
-    
-    private boolean nextLocationWillBeStop(final Minecart cart)
-    {
-        PointWrapper currentPoint = new PointWrapper(cart.getLocation().getBlockX(), cart.getLocation().getBlockY(), cart.getLocation().getBlockZ());
-        
-        return false;
-    }
-    
-    private boolean previousLocationWasStop(final Minecart cart)
-    {
-        Location previousLocation = locations.get(cart);
-        
-        if (previousLocation == null) {
-            locations.put(cart, cart.getLocation());
-            return false;
-        }
-        
-        if (TransportPlugin.getTrainStopManager().isTrainStopRegistered(previousLocation) || TrainStop.isStop(previousLocation))
-            return true;
-        
-        return false;
     }
 }

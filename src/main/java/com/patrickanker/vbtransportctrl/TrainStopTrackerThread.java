@@ -42,8 +42,9 @@ public class TrainStopTrackerThread extends Thread {
     @Override
     @SuppressWarnings("UnusedAssignment")
     public void run()
-    {
+    {   
         while (!terminate) {
+            
             for (TrainStop stop : deactivateQueue) {
                 if (stop.hasWaitingCart()) {
                     stop.getWaitingCart().remove();
