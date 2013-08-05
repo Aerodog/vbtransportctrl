@@ -44,6 +44,9 @@ I thought about it, but since the people on TVB are trusted will not breaking st
 ### May I contribute to this project?
 YES YES YES! I love contribution by anyone, and since this licensed under the [MIT License][License], you may fork your own version and tinker (but if you submit your code back here in the form of a pull request, that'd make me happy :) ).
 
+*Travis says...*
+[![Build Status](https://travis-ci.org/psanker/vbtransportctrl.png)](https://travis-ci.org/psanker/vbtransportctrl)
+
 Obligatory License Spam
 -----
 
